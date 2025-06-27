@@ -1,10 +1,12 @@
 # Folder view configuration files
 .DS_Store
+.DS_Store?
 Desktop.ini
 
 # Thumbnail cache files
 ._*
 Thumbs.db
+ehtumbs.db
 
 # Files that might appear on external disks
 .Spotlight-V100
@@ -19,4 +21,56 @@ Thumbs.db
 # Application specific files
 venv
 node_modules
-.sass-cache
+.sass-cach
+
+# Model files
+models/
+*.pth
+*.pkl
+*.h5
+*.pt
+
+# Data directories
+data/pretrained_model/
+data/coco/
+data/vg/
+data/genome/
+*.tsv
+*.json
+
+# Build artifacts
+lib/faster_rcnn.egg-info/
+lib/build/
+lib/dist
+*.egg-info/
+*.so
+*.c
+*.cpp.o
+*.cu.o
+
+# Output files
+output/
+logs/
+*.log
+*.out
+*.err
+
+# Matplotlib cache
+.matplotlib/
+
+# Jupyter notebooks
+.ipnyb_checkpoints/
+
+# PyCharm
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Vim
+*.swp
+*.swo
+*~
+
+
