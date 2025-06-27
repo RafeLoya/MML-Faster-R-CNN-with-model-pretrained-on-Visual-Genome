@@ -219,7 +219,9 @@ def resnet152(pretrained=False):
 
 class resnet(_fasterRCNN):
   def __init__(self, classes, num_layers=101, pretrained=False, class_agnostic=False):
-    self.model_path = 'data/pretrained_model/resnet101_caffe.pth'
+    # support for Caffe and PyTorch models
+    self.model_path_caffe = 'data/pretrained_model/resnet101_caffe.pth'
+    self.model_path_pytorch = 'data/pretrained_model/resnet101_pytorch.pth'
     self.dout_base_model = 1024
     self.pretrained = pretrained
     self.class_agnostic = class_agnostic
@@ -227,12 +229,65 @@ class resnet(_fasterRCNN):
     _fasterRCNN.__init__(self, classes, class_agnostic)
 
   def _init_modules(self):
-    resnet = resnet101()
+    # resnet = resnet101()
+    if self.num_layers == 18:
+      resnet = models.resnet18(pretrained=False)
+    elif self.num_layers == 34:
+      resnet = models.resnet34(pretrained=False)
+    elif self.num_layers == 50:
+      resnet = models.resnet50(pretrained=False)
+    elif self.num_layers == 101:
+      resnet = models.resnet101(pretrained=False)
+    elif self.num_layers == 152:
+      resnet = models.resnet152(pretrained=False)
+    else:
+      raise ValueError(f"Unsupported number of layers: {self.num_layers}")
 
     if self.pretrained == True:
-      print("Loading pretrained weights from %s" %(self.model_path))
-      state_dict = torch.load(self.model_path)
-      resnet.load_state_dict({k:v for k,v in state_dict.items() if k in resnet.state_dict()})
+      # print("Loading pretrained weights from %s" %(self.model_path))
+      loaded = False
+
+      # try to load Caffe model
+      if os.path.exists(self.model_path_caffe):
+        try:
+          print("Loading Caffe pretrained weights from %s" % self.model_path_caffe)
+          state_dict = torch.load(self.model_path_caffe)
+          resnet.load_state_dict({k: v for k, v in state_dict.items() if k in resnet.state_dict()})
+          loaded = True
+        except Exception as e:
+          print(f"Failed to load Caffe model: {e}")
+
+      # Try to load PyTorch model if exists
+      if not loaded and os.path.exists(self.model_path_pytorch):
+        try:
+          print("Loading PyTorch pretrained weights from %s" % (self.model_path_pytorch))
+          state_dict = torch.load(self.model_path_pytorch)
+          resnet.load_state_dict(state_dict)
+          loaded = True
+        except Exception as e:
+          print(f"Failed to load PyTorch model: {e}")
+
+      # use torchvision pretrained if no local models were found
+      if not loaded:
+        print("No local pretrained model found. Loading PyTorch ImageNet pretrained weights...")
+        if self.num_layers == 18:
+          pretrained_resnet = models.resnet18(pretrained=True)
+        elif self.num_layers == 34:
+          pretrained_resnet = models.resnet34(pretrained=True)
+        elif self.num_layers == 50:
+          pretrained_resnet = models.resnet50(pretrained=True)
+        elif self.num_layers == 101:
+          pretrained_resnet = models.resnet101(pretrained=True)
+        elif self.num_layers == 152:
+          pretrained_resnet = models.resnet152(pretrained=True)
+
+        resnet.load_state_dict(pretrained_resnet.state_dict())
+        loaded = True
+
+        # save pytorch model for future use?
+        print(f"Saving PyTorch pretrained weights to {self.model_path_pytorch}")
+        os.makedirs(os.path.dirname(self.model_path_pytorch), exist_ok=True)
+        torch.save(pretrained_resnet.state_dict(), self.model_path_pytorch)
 
     # Build resnet.
     self.RCNN_base = nn.Sequential(resnet.conv1, resnet.bn1,resnet.relu,
